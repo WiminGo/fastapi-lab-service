@@ -7,6 +7,7 @@ from sqlalchemy.orm import declarative_base, mapped_column, Mapped, Session
 from sqlalchemy.types import Integer, String, DateTime
 from datetime import datetime, timezone,date, time
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+import re
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import os
@@ -53,7 +54,21 @@ class ServiceBase(BaseModel):
         return v
 
 class ServiceCreate(ServiceBase):
-    pass
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone_update(cls, v):
+        if v is None:
+            return v  # Пропускаем, если не передан
+        if not isinstance(v, str):
+            raise ValueError("Номер телефона должен быть строкой")
+        if not v.strip():
+            raise ValueError("Номер телефона не может быть пустым")
+        cleaned = re.sub(r"[^\d+]", "", v.strip())
+        if not re.match(r"^\+\d{7,15}$", cleaned):
+            raise ValueError(
+                "Номер телефона должен быть в международном формате: +<код><номер>, например +491234567890"
+            )
+        return cleaned
 
 class ServiceUpdate(ServiceBase):
     title: Optional[str] = Field(None, min_length=3)
@@ -70,6 +85,22 @@ class ServiceUpdate(ServiceBase):
         if v is not None and not v.strip():
             raise ValueError("Заголовок не должен состоять только из пробелов")
         return v
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone_update(cls, v):
+        if v is None:
+            return v  # Пропускаем, если не передан
+        if not isinstance(v, str):
+            raise ValueError("Номер телефона должен быть строкой")
+        if not v.strip():
+            raise ValueError("Номер телефона не может быть пустым")
+        cleaned = re.sub(r"[^\d+]", "", v.strip())
+        if not re.match(r"^\+\d{7,15}$", cleaned):
+            raise ValueError(
+                "Номер телефона должен быть в международном формате: +<код><номер>, например +491234567890"
+            )
+        return cleaned
 
 class ServiceResponse(ServiceBase):
     id: int
