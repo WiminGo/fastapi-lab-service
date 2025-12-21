@@ -66,9 +66,17 @@ class ServiceCreate(ServiceBase):
         cleaned = re.sub(r"[^\d+]", "", v.strip())
         if not re.match(r"^\+\d{7,15}$", cleaned):
             raise ValueError(
-                "Номер телефона должен быть в международном формате: +<код><номер>, например +491234567890"
+                "Номер телефона должен быть в международном формате: +<код><номер>, например +79931255265"
             )
         return cleaned
+
+    @field_validator("available_at")
+    @classmethod
+    def validate_future_date(cls, v: datetime) -> datetime:
+        now_utc = datetime.now(timezone.utc)
+        if v < now_utc:
+            raise ValueError("Дата оказания услуги не может быть в прошлом")
+        return v
 
 class ServiceUpdate(ServiceBase):
     title: Optional[str] = Field(None, min_length=3)
