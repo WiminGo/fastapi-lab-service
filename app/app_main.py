@@ -5,7 +5,7 @@ from typing import Optional, List
 from sqlalchemy import create_engine, select, func, asc, desc
 from sqlalchemy.orm import declarative_base, mapped_column, Mapped, Session
 from sqlalchemy.types import Integer, String, DateTime
-from datetime import datetime, timezone
+from datetime import datetime, timezone,date, time
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -87,7 +87,7 @@ def list_items(
     service_type: Optional[str] = Query(None, description="Фильтр по типу предоставляемых услуг"),
     max_price: Optional[int] = Query(None, description="Фильтр услуг со стоимостью меньше указанной"),
     min_price: Optional[int] = Query(None, description="Фильтр услуг со стоимостью больше указанной"),
-    available_at: Optional[datetime] = Query(None, description="Поиск по дате"),
+    available_at: Optional[date] = Query(None, description="Поиск по дате"),
     order: str = Query("asc", description="Порядок: asc или desc"),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100)
@@ -115,7 +115,9 @@ def list_items(
         if min_price is not None:
             stmt = stmt.where(Service.price >= min_price)
         if available_at is not None:
-            stmt = stmt.where(Service.available_at == available_at)
+            start_dt = datetime.combine(available_at, time.min, tzinfo=timezone.utc)
+            end_dt = datetime.combine(available_at, time.max, tzinfo=timezone.utc)
+            stmt = stmt.where(Service.available_at >= start_dt, Service.available_at <= end_dt)
 
         stmt = stmt.order_by(asc(Service.price) if order == "asc" else desc(Service.price))
         stmt = stmt.offset(offset).limit(limit)
