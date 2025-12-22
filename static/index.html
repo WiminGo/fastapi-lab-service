@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service PROvision</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <!-- 🔴 Header на всю ширину -->
+  <header class="bg-danger text-white py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+      <h1 class="h3 mb-0">Service PROvision</h1>
+      <button class="btn btn-light" id="toggle-create-form">➕ Добавить услугу</button>
+    </div>
+  </header>
+
+  <!-- Основной контент -->
+  <div class="container mt-4">
+
+    <!-- Форма создания (скрыта по умолчанию) -->
+    <div id="create-section" class="d-none">
+      <div class="card p-4 mb-4 shadow-sm">
+        <h3>Добавить новую услугу</h3>
+        <form id="create-form">
+          <div class="mb-3">
+            <label for="title" class="form-label">Название</label>
+            <input type="text" class="form-control" id="title" required>
+          </div>
+          <div class="mb-3">
+            <label for="details" class="form-label">Описание</label>
+            <textarea class="form-control" id="details" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="service-type" class="form-label">Тип услуги</label>
+            <input type="text" class="form-control" id="service-type" required>
+          </div>
+          <div class="mb-3">
+            <label for="provider-name" class="form-label">Имя исполнителя</label>
+            <input type="text" class="form-control" id="provider-name" required>
+          </div>
+          <div class="mb-3">
+            <label for="phone" class="form-label">Телефон</label>
+            <input type="text" class="form-control" id="phone" placeholder="+79991234567" required>
+          </div>
+          <div class="mb-3">
+            <label for="price" class="form-label">Цена</label>
+            <input type="number" class="form-control" id="price" min="0" required>
+          </div>
+          <div class="mb-3">
+            <label for="available-at" class="form-label">Доступно с</label>
+            <input type="datetime-local" class="form-control" id="available-at" required>
+          </div>
+          <button type="submit" class="btn btn-success">Создать</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Список услуг -->
+    <div class="row" id="services-list">
+      <!-- Услуги будут загружаться сюда через JS -->
+    </div>
+
+  </div>
+
+  <!-- Модальное окно редактирования -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">Редактировать услугу</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="update-form">
+            <input type="hidden" id="update-id">
+            <div class="mb-3">
+              <label for="update-title" class="form-label">Название</label>
+              <input type="text" class="form-control" id="update-title">
+            </div>
+            <div class="mb-3">
+              <label for="update-details" class="form-label">Описание</label>
+              <textarea class="form-control" id="update-details" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="update-service-type" class="form-label">Тип услуги</label>
+              <input type="text" class="form-control" id="update-service-type">
+            </div>
+            <div class="mb-3">
+              <label for="update-provider-name" class="form-label">Имя исполнителя</label>
+              <input type="text" class="form-control" id="update-provider-name">
+            </div>
+            <div class="mb-3">
+              <label for="update-phone" class="form-label">Телефон</label>
+              <input type="text" class="form-control" id="update-phone">
+            </div>
+            <div class="mb-3">
+              <label for="update-price" class="form-label">Цена</label>
+              <input type="number" class="form-control" id="update-price" min="0">
+            </div>
+            <div class="mb-3">
+              <label for="update-available-at" class="form-label">Доступно с</label>
+              <input type="datetime-local" class="form-control" id="update-available-at">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="save-update-btn">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/script.js"></script>
+</body>
+</html>

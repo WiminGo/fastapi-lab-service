@@ -38,7 +38,7 @@ class ServiceBase(BaseModel):
     service_type: str = Field(..., description="Тип услуги")
     provider_name: str = Field(..., description="Укажите ваше имя")
     phone: str = Field(..., description="Номер телофона, чтобы клиент мог с вами связаться")
-    price: int = Field(..., description="Цена услуги")
+    price: int = Field(...,ge=0, description="Цена услуги")
     available_at: datetime = Field(..., description="Дата оказании услуги")
 
     @field_validator("available_at")
@@ -214,6 +214,19 @@ def delete_service(service_id: int = Path(ge=1)):
         session.delete(obj)
         session.commit()
         return
+
+# Определяем путь к папке static относительно app_main.py
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+static_dir = os.path.join(project_root, "static")
+
+# Подключаем статику
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# Главная страница — отдаём index.html
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def read_root():
+    with open(os.path.join(static_dir, "index.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
 
 
