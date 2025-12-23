@@ -1,9 +1,7 @@
-from http.client import responses
-
 from fastapi import FastAPI, HTTPException, Query, Path, status
 from typing import Optional, List
-from sqlalchemy import create_engine, select, func, asc, desc
-from sqlalchemy.orm import declarative_base, mapped_column, Mapped, Session
+from sqlalchemy import select, func, asc, desc
+from sqlalchemy.orm import declarative_base, mapped_column, Mapped
 from sqlalchemy.types import Integer, String, DateTime
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from datetime import datetime, timezone,date, time
@@ -11,11 +9,12 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 import re
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from contextlib import asynccontextmanager
 import os
 
 
-DATABASE_URL = "sqlite:///lab.db"
-engine = create_async_engine("sqlite+aiosqlite:///lab.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///lab.db")
+engine = create_async_engine(DATABASE_URL)
 Base = declarative_base()
 
 class Service(Base):
@@ -30,14 +29,13 @@ class Service(Base):
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
-app = FastAPI(title="Service PROvision")
 
 class ServiceBase(BaseModel):
-    title: str = Field(..., min_length=3, description="Заголовок задачи (минимум 3 символа)")
+    title: str = Field(..., min_length=3, description="Заголовок услуги (минимум 3 символа)")
     details: Optional[str] = Field(None, description="Дополнительные сведения")
     service_type: str = Field(..., description="Тип услуги")
     provider_name: str = Field(..., description="Укажите ваше имя")
-    phone: str = Field(..., description="Номер телофона, чтобы клиент мог с вами связаться")
+    phone: str = Field(..., description="Номер телефона, чтобы клиент мог с вами связаться")
     price: int = Field(...,ge=0, description="Цена услуги")
     available_at: datetime = Field(..., description="Дата оказании услуги")
 
@@ -106,7 +104,7 @@ class ServiceUpdate(ServiceBase):
         cleaned = re.sub(r"[^\d+]", "", v.strip())
         if not re.match(r"^\+\d{7,15}$", cleaned):
             raise ValueError(
-                "Номер телефона должен быть в международном формате: +<код><номер>, например +491234567890"
+                "Номер телефона должен быть в международном формате: +<код><номер>, например +79931255265"
             )
         return cleaned
 
@@ -116,10 +114,13 @@ class ServiceResponse(ServiceBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    yield
+
+app = FastAPI(title="Service PROvision", lifespan=lifespan)
 
 @app.get("/health", tags=["system"])
 def health():
@@ -234,5 +235,7 @@ def read_root():
     with open(os.path.join(static_dir, "index.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
 
+# Для тестов
+__all__ = ["app", "engine", "Base"]
 
 
