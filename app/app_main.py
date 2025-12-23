@@ -5,6 +5,7 @@ from typing import Optional, List
 from sqlalchemy import create_engine, select, func, asc, desc
 from sqlalchemy.orm import declarative_base, mapped_column, Mapped, Session
 from sqlalchemy.types import Integer, String, DateTime
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from datetime import datetime, timezone,date, time
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 import re
@@ -14,7 +15,7 @@ import os
 
 
 DATABASE_URL = "sqlite:///lab.db"
-engine = create_engine(DATABASE_URL, echo=False, future=True)
+engine = create_async_engine("sqlite+aiosqlite:///lab.db")
 Base = declarative_base()
 
 class Service(Base):
@@ -29,7 +30,6 @@ class Service(Base):
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
-Base.metadata.create_all(engine)
 app = FastAPI(title="Service PROvision")
 
 class ServiceBase(BaseModel):
@@ -116,12 +116,17 @@ class ServiceResponse(ServiceBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
 @app.get("/health", tags=["system"])
 def health():
     return {"status": "ok"}
 
 @app.get("/services", response_model=List[ServiceResponse], tags=["services"])
-def list_items(
+async def list_items(
     q: Optional[str] = Query(None, description="Поиск по подстроке в title и details (без учёта регистра)"),
     service_type: Optional[str] = Query(None, description="Фильтр по типу предоставляемых услуг"),
     max_price: Optional[int] = Query(None, description="Фильтр услуг со стоимостью меньше указанной"),
@@ -137,7 +142,7 @@ def list_items(
             detail="Порядок сортировки должен быть 'asc' или 'desc'"
         )
 
-    with Session(engine) as session:
+    async with AsyncSession(engine) as session:
         stmt = select(Service)
 
         if q:
@@ -161,18 +166,19 @@ def list_items(
         stmt = stmt.order_by(asc(Service.price) if order == "asc" else desc(Service.price))
         stmt = stmt.offset(offset).limit(limit)
 
-        return session.scalars(stmt).all()
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
 @app.get("/services/{service_id}", response_model=ServiceResponse, tags=["services"])
-def get_service(service_id: int = Path(ge=1)):
-    with Session(engine) as session:
-        service = session.get(Service, service_id)
+async def get_service(service_id: int = Path(ge=1)):
+    async with AsyncSession(engine) as session:
+        service = await session.get(Service, service_id)
         if not service:
             raise HTTPException(status_code=404, detail="Услуга не найдена")
         return service
 
 @app.post("/services", response_model=ServiceResponse, status_code=status.HTTP_201_CREATED,tags=["services"])
-def create_service(service: ServiceCreate):
+async def create_service(service: ServiceCreate):
         obj = Service(
             title=service.title,
             details=service.details,
@@ -183,17 +189,17 @@ def create_service(service: ServiceCreate):
             available_at=service.available_at
         )
 
-        with Session(engine) as session:
+        async with AsyncSession(engine) as session:
             session.add(obj)
-            session.commit()
-            session.refresh(obj)
+            await session.commit()
+            await session.refresh(obj)
             return obj
 
 
 @app.patch("/services/{service_id}", response_model=ServiceResponse, tags=["services"])
-def update_service(service_id: int = Path(ge=1), service: ServiceUpdate = ...):
-    with Session(engine) as session:
-        obj = session.get(Service, service_id)
+async def update_service(service_id: int = Path(ge=1), service: ServiceUpdate = ...):
+    async with AsyncSession(engine) as session:
+        obj = await session.get(Service, service_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Услуга не найдена")
 
@@ -201,18 +207,18 @@ def update_service(service_id: int = Path(ge=1), service: ServiceUpdate = ...):
         for key, value in update_data.items():
             setattr(obj, key, value)
 
-        session.commit()
-        session.refresh(obj)
+        await session.commit()
+        await session.refresh(obj)
         return obj
 
 @app.delete("/services/{service_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["services"])
-def delete_service(service_id: int = Path(ge=1)):
-    with Session(engine) as session:
-        obj = session.get(Service, service_id)
+async def delete_service(service_id: int = Path(ge=1)):
+    async with AsyncSession(engine) as session:
+        obj = await session.get(Service, service_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Услуга не найдена")
-        session.delete(obj)
-        session.commit()
+        await session.delete(obj)
+        await session.commit()
         return
 
 # Определяем путь к папке static относительно app_main.py
