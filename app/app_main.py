@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, Path, status
+from fastapi import FastAPI, HTTPException, Query, Path, status, UploadFile, File
 from typing import Optional, List
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import declarative_base, mapped_column, Mapped
@@ -10,10 +10,15 @@ import re
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
+from pathlib import Path as pathlib_Path
 import os
+import uuid
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///lab.db")
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 engine = create_async_engine(DATABASE_URL)
 Base = declarative_base()
 
@@ -28,6 +33,7 @@ class Service(Base):
     price: Mapped[int] = mapped_column(Integer)
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_booked: Mapped[bool] = mapped_column(Boolean,default=False ,nullable=False)
+    image_url: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
@@ -39,6 +45,7 @@ class ServiceBase(BaseModel):
     phone: str = Field(..., description="Номер телефона, чтобы клиент мог с вами связаться")
     price: int = Field(...,ge=0, description="Цена услуги")
     is_booked: bool = Field(default=False, description="Забронирована ли услуга")
+    image_url: Optional[str] = Field(None, description="Изображение")
     available_at: datetime = Field(..., description="Дата оказании услуги")
 
     @field_validator("available_at")
@@ -87,6 +94,7 @@ class ServiceUpdate(ServiceBase):
     price: Optional[int] = None
     available_at: Optional[datetime] = None
     is_booked: Optional[bool] = None
+    image_url: Optional[str] = None
 
     @field_validator("title", mode='before')
     @classmethod
@@ -124,6 +132,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Service PROvision", lifespan=lifespan)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/health", tags=["system"])
 def health():
@@ -190,7 +199,8 @@ async def create_service(service: ServiceCreate):
             provider_name=service.provider_name,
             phone=service.phone,
             price=service.price,
-            available_at=service.available_at
+            available_at=service.available_at,
+            image_url = service.image_url
         )
 
         async with AsyncSession(engine) as session:
@@ -199,6 +209,27 @@ async def create_service(service: ServiceCreate):
             await session.refresh(obj)
             return obj
 
+@app.post("/upload-image", tags=["media"])
+async def upload_image(file: UploadFile = File(...)):
+    # Проверка MIME-типа
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Файл должен быть изображением")
+
+    # Проверка расширения
+    ext = pathlib_Path(file.filename).suffix.lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+        raise HTTPException(status_code=400, detail="Разрешены только: .jpg, .jpeg, .png, .webp")
+
+    # Генерация уникального имени
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
+
+    # Сохранение файла
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    # Возвращаем URL, который можно использовать в image_url
+    return {"image_url": f"/uploads/{safe_filename}"}
 
 @app.patch("/services/{service_id}", response_model=ServiceResponse, tags=["services"])
 async def update_service(service_id: int = Path(ge=1), service: ServiceUpdate = ...):

@@ -54,6 +54,13 @@
             <label for="available-at" class="form-label">Доступно с</label>
             <input type="datetime-local" class="form-control" id="available-at" required>
           </div>
+          <div class="mb-3">
+            <label for="image-upload" class="form-label">Фото услуги</label>
+            <input type="file" class="form-control" id="image-upload" accept="image/jpeg,image/png,image/webp">
+            <div class="mt-2">
+              <img id="image-preview" src="" alt="Предпросмотр" class="img-thumbnail d-none" style="max-height: 200px;">
+            </div>
+          </div>
           <button type="submit" class="btn btn-success">Создать</button>
         </form>
       </div>
@@ -104,6 +111,13 @@
             <div class="mb-3">
               <label for="update-available-at" class="form-label">Доступно с</label>
               <input type="datetime-local" class="form-control" id="update-available-at">
+            </div>
+            <div class="mb-3">
+              <label for="update-image-upload" class="form-label">Фото услуги</label>
+              <input type="file" class="form-control" id="update-image-upload" accept="image/jpeg,image/png,image/webp">
+              <div class="mt-2">
+                <img id="update-image-preview" src="" alt="Предпросмотр" class="img-thumbnail d-none" style="max-height: 200px;">
+              </div>
             </div>
           </form>
         </div>

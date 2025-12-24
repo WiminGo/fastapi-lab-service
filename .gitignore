@@ -6,6 +6,7 @@ ENV/
 # Database
 lab.db
 test_lab.db
+uploads/
 
 # Python
 __pycache__/
