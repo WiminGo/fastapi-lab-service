@@ -1,29 +1,73 @@
-body {
-    background-color: #f8f9fa;
+/* Насыщенный красный брендовый цвет */
+.bg-red-brand {
+  background-color: #d11111 !important; /* Deep Firebrick Red */
 }
+
+/* Улучшённый футер */
+footer {
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Улучшения общего дизайна */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #fdfdfd;
+}
+
+.container {
+  flex: 1;
+}
+
+/* Улучшённые карточки */
 .card {
-    transition: transform 0.2s;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25d5s ease;
 }
 .card:hover {
-    transform: translateY(-5px);
+  transform: translateY(-6px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
-.booking-status {
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.9em;
+
+/* Улучшение кнопок в футере карточки */
+.card-footer {
+  background-color: #fff;
+  border-top: none;
+  padding: 1rem;
 }
-.status-booked {
-    color: #721c24;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
+
+/* Стили для кнопок бронирования (уже частично есть, но унифицируем) */
+.btn-booked,
+.btn-success:disabled {
+  background-color: #adb5bd !important;
+  border-color: #adb5bd !important;
 }
-.status-available { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
-.btn-book { background-color: #28a745; border-color: #28a745; }
-.btn-book:hover:not(:disabled) { background-color: #218838; border-color: #1e7e34; }
-.btn-book:disabled { opacity: 0.65; }
-.btn-unbook { background-color: #dc3545; border-color: #dc3545; }
-.btn-unbook:hover:not(:disabled) { background-color: #c82333; border-color: #bd2130; }
-.btn-unbook:disabled { opacity: 0.65; }
-.card.booked { border-left: 4px solid #dc3545; background-color: #fff8f8; }
-.card:not(.booked) { border-left: 4px solid #28a745; }
+
+/* Мягкие радиусы и шрифты */
+.form-control, .btn {
+  border-radius: 8px;
+}
+
+h1, h3, h5 {
+  font-weight: 600;
+}
+
+.text-red-accent {
+  color: #ff6b6b; /* Светло-красный акцент для "PRO" */
+}
+
+/* Стиль логотипа в шапке */
+.logo-link {
+  display: inline-block;
+  line-height: 0; /* убирает лишний отступ под изображением */
+}
+
+.logo-img {
+   /* или width: 180px — регулируйте под ваш дизайн */
+  width: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); /* лёгкая тень для контраста */
+}
