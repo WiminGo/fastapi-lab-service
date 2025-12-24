@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query, Path, status
 from typing import Optional, List
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import declarative_base, mapped_column, Mapped
-from sqlalchemy.types import Integer, String, DateTime
+from sqlalchemy.types import Integer, String, DateTime, Boolean
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from datetime import datetime, timezone,date, time
 from pydantic import BaseModel, Field, field_validator, ConfigDict
@@ -27,6 +27,7 @@ class Service(Base):
     phone: Mapped[str] = mapped_column(String, nullable=False)
     price: Mapped[int] = mapped_column(Integer)
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    is_booked: Mapped[bool] = mapped_column(Boolean,default=False ,nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
@@ -37,6 +38,7 @@ class ServiceBase(BaseModel):
     provider_name: str = Field(..., description="Укажите ваше имя")
     phone: str = Field(..., description="Номер телефона, чтобы клиент мог с вами связаться")
     price: int = Field(...,ge=0, description="Цена услуги")
+    is_booked: bool = Field(default=False, description="Забронирована ли услуга")
     available_at: datetime = Field(..., description="Дата оказании услуги")
 
     @field_validator("available_at")
@@ -84,6 +86,7 @@ class ServiceUpdate(ServiceBase):
     phone: Optional[str] = None
     price: Optional[int] = None
     available_at: Optional[datetime] = None
+    is_booked: Optional[bool] = None
 
     @field_validator("title", mode='before')
     @classmethod
